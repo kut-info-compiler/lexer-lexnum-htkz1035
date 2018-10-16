@@ -35,11 +35,7 @@ public class Lexer {
 	static final int CT_A = 4;
 	static final int CT_OTHER = 5;
 
-	/*
-	 * 文字を分類する
-	 *   [1-9] や [a-f] をまとめて扱えるようにするため．
-	 */
-	static int getCharType(int c) {
+static int getCharType(int c) {
 		if (c == '.')             return CT_P;
 		if (c == 'x' || c == 'X') return CT_X;
 		if (c == '0')             return CT_0;
@@ -49,21 +45,19 @@ public class Lexer {
 		return CT_OTHER;
 	}
 	
-	int[][] delta = {
-		/* TODO */
-		/* 状態遷移表を作る */
-		/*   delta[現状態][入力記号] */
+int[][] delta = {
+    {4, -1,  1, 2, 3, -1}, // 初期状態(0) 受理×
+	    {5, 6, 7, 7, 3, -1}, // 最初が0である状態(1) 受理○
+	    {5, -1, 2, 2, 3, -1}, // 最初が[1-9]である状態(2) 受理○
+	    {-1, -1, 3, 3, 3, -1}, // 最初が[a-f][A-F]である状態(3) 受理○
+	    {-1, -1, 5, 5, -1, -1}, // 最初が.である状態(4) 受理×
+	    {-1, -1, 5, 5, -1, -1}, // 小数部分がある状態(5) 受理○
+	    {-1, -1, 3, 3, 3, -1}, // 0xまたは0Xである状態(6) 受理×
+	    {-1, -1, 7, 7, 3, -1}, // 0[0-9]である状態(7) 受理×
+	    
+};
 
-		/*  P  X  0  1  A  OTHER */
-		/*{ ?, ?, ?, ?, ?, ?}, /* 状態0 */
-		/*{ ?, ?, ?, ?, ?, ?}, /* 状態1 */
-		/*...*/
-	};
-
-	/*
-	 * 文字列 str の start 文字目から字句解析しトークンを一つ返す
-	 */
-	Token getToken(String str, int start) {
+    Token getToken(String str, int start) {
 		/* 現在注目している文字 (先頭から p 文字目)  */
 		int p = start;
 
@@ -85,6 +79,20 @@ public class Lexer {
 			/* 行先がなければループを抜ける */
 			/* 行先が受理状態であれば「最後の受理状態」を更新する */
 
+			if (nextState == -1) {
+			    break;
+			}
+			
+		        if (nextState == 1 || nextState == 2 || nextState == 3) {
+				acceptMarker = Token.TYPE_INT;
+				acceptPos = p;
+			}
+		        if (nextState == 5) {
+				acceptMarker = Token.TYPE_DEC;
+				acceptPos = p;
+			}
+						 
+			    
 			currentState = nextState;
 		}
 		
